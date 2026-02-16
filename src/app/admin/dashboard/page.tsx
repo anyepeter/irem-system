@@ -1,10 +1,14 @@
 import { requireAdmin } from "@/lib/auth";
-import { getUsers, getUserStats } from "@/actions/user";
+import { getUserStats } from "@/actions/user";
+import { getCustomerStats } from "@/actions/customer";
 import { AdminDashboardClient } from "./client";
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
-  const [users, stats] = await Promise.all([getUsers(), getUserStats()]);
+  const [stats, customerStats] = await Promise.all([
+    getUserStats(),
+    getCustomerStats(),
+  ]);
 
   return (
     <AdminDashboardClient
@@ -14,8 +18,8 @@ export default async function AdminDashboardPage() {
         avatar: admin.avatar,
         role: admin.role,
       }}
-      users={JSON.parse(JSON.stringify(users))}
       stats={stats}
+      customerStats={customerStats}
     />
   );
 }

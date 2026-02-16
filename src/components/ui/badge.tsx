@@ -11,6 +11,8 @@ const badgeVariants = cva(
         admin: "border-transparent bg-purple-100 text-purple-800",
         cashier: "border-transparent bg-emerald-100 text-emerald-800",
         technician: "border-transparent bg-amber-100 text-amber-800",
+        vip: "border-transparent bg-amber-100 text-amber-800",
+        regular: "border-transparent bg-gray-100 text-gray-600",
         destructive: "border-transparent bg-red-100 text-red-800",
         outline: "border-gray-300 text-gray-700",
       },

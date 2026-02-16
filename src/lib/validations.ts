@@ -24,5 +24,21 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const createCustomerSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(100, "Name must be less than 100 characters"),
+  phone: z
+    .string()
+    .min(9, "Phone number must be at least 9 digits")
+    .regex(/^\+?[0-9\s-]+$/, "Invalid phone number format"),
+  address: z.string().min(1, "Address is required"),
+  isVIP: z.boolean().default(false),
+});
+
+export const updateCustomerSchema = createCustomerSchema;
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;

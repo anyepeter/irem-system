@@ -55,7 +55,7 @@ function PasswordCell({ password }: { password: string }) {
   );
 }
 
-export function UserTable({ users, currentUserId }: { users: User[]; currentUserId: string }) {
+export function UserTable({ users, currentUserId, onDataChange }: { users: User[]; currentUserId: string; onDataChange?: () => void }) {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteResult, setDeleteResult] = useState<ActionResult | null>(null);
@@ -74,6 +74,7 @@ export function UserTable({ users, currentUserId }: { users: User[]; currentUser
       setTimeout(() => {
         setDeleteTarget(null);
         setDeleteResult(null);
+        onDataChange?.();
       }, 1000);
     }
   };
@@ -219,6 +220,7 @@ export function UserTable({ users, currentUserId }: { users: User[]; currentUser
           user={editTarget}
           open={!!editTarget}
           onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          onSuccess={onDataChange}
         />
       )}
 

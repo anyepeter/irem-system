@@ -26,7 +26,26 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  customers Customer[]
+
   @@index([clerkId])
   @@index([email])
   @@index([role])
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  address   String   @default("")
+  isVIP     Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  @@index([phone])
+  @@index([name])
+  @@index([createdById])
 }

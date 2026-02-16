@@ -1,12 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { StatsCard } from "@/components/dashboard/stats-card";
-import { CreateUserDialog } from "@/components/dashboard/create-user-dialog";
-import { UserTable } from "@/components/dashboard/user-table";
-import { Users, Shield, DollarSign, Wrench } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Shield, DollarSign, Wrench, Contact, Activity, BarChart3, TrendingUp } from "lucide-react";
 
 type Props = {
   admin: {
@@ -15,27 +15,20 @@ type Props = {
     avatar: string | null;
     role: "ADMIN" | "CASHIER" | "TECHNICIAN";
   };
-  users: Array<{
-    id: string;
-    clerkId: string;
-    username: string;
-    email: string;
-    password: string;
-    phone: string;
-    avatar: string | null;
-    role: "ADMIN" | "CASHIER" | "TECHNICIAN";
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
   stats: {
     total: number;
     admins: number;
     cashiers: number;
     technicians: number;
   };
+  customerStats: {
+    total: number;
+    vip: number;
+    regular: number;
+  };
 };
 
-export function AdminDashboardClient({ admin, users, stats }: Props) {
+export function AdminDashboardClient({ admin, stats, customerStats }: Props) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar role={admin.role} username={admin.username} />
@@ -43,7 +36,7 @@ export function AdminDashboardClient({ admin, users, stats }: Props) {
       <div className="flex-1 flex flex-col min-w-0">
         <Header
           title="Admin Dashboard"
-          subtitle="Manage your team and system settings"
+          subtitle="Overview of your system"
           username={admin.username}
           avatar={admin.avatar}
           role={admin.role}
@@ -51,29 +44,64 @@ export function AdminDashboardClient({ admin, users, stats }: Props) {
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard title="Total Users" value={stats.total} icon={Users} color="blue" delay={0} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <Link href="/admin/users">
+              <StatsCard title="Total Users" value={stats.total} icon={Users} color="blue" delay={0} />
+            </Link>
             <StatsCard title="Admins" value={stats.admins} icon={Shield} color="purple" delay={0.1} />
             <StatsCard title="Cashiers" value={stats.cashiers} icon={DollarSign} color="emerald" delay={0.2} />
             <StatsCard title="Technicians" value={stats.technicians} icon={Wrench} color="amber" delay={0.3} />
+            <Link href="/admin/customers">
+              <StatsCard title="Customers" value={customerStats.total} icon={Contact} color="blue" delay={0.4} />
+            </Link>
           </div>
 
-          {/* Users section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
-                <p className="text-sm text-gray-500">Manage your organization&apos;s users</p>
-              </div>
-              <CreateUserDialog />
-            </div>
+          {/* Placeholder cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Activity className="w-5 h-5 text-blue-500" />
+                    Recent Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <Activity className="w-12 h-12 mb-3 text-gray-300" />
+                    <p className="text-sm font-medium text-gray-500">Activity Feed</p>
+                    <p className="text-xs text-gray-400 mt-1">Recent system activity will appear here</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <UserTable users={users} currentUserId={admin.id} />
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.4 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BarChart3 className="w-5 h-5 text-emerald-500" />
+                    Analytics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <TrendingUp className="w-12 h-12 mb-3 text-gray-300" />
+                    <p className="text-sm font-medium text-gray-500">Analytics Dashboard</p>
+                    <p className="text-xs text-gray-400 mt-1">Charts and reports will appear here</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
         </main>
       </div>
     </div>

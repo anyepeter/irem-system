@@ -40,9 +40,10 @@ type EditUserDialogProps = {
   user: User;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 };
 
-export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps) {
+export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUserDialogProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ActionResult | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -92,6 +93,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
         onOpenChange(false);
         setResult(null);
         setAvatarPreview(null);
+        onSuccess?.();
       }, 1500);
     }
   };

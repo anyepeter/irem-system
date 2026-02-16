@@ -24,7 +24,7 @@ import { createUser, type ActionResult } from "@/actions/user";
 import { UserPlus, Upload, Loader2, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 
-export function CreateUserDialog() {
+export function CreateUserDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -62,6 +62,7 @@ export function CreateUserDialog() {
         setAvatarPreview(null);
         setRole("");
         formRef.current?.reset();
+        onSuccess?.();
       }, 1500);
     }
   };
