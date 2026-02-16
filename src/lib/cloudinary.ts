@@ -41,6 +41,38 @@ export async function uploadAvatar(
   }
 }
 
+export async function uploadProductImage(
+  file: File
+): Promise<{ url: string } | { error: string }> {
+  try {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return { error: "Invalid file type. Allowed: JPEG, PNG, WebP, GIF" };
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return { error: "File size exceeds 5MB limit" };
+    }
+
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
+
+    const result = await cloudinary.uploader.upload(base64, {
+      folder: "system-products",
+      transformation: [
+        { width: 800, height: 800, crop: "limit" },
+        { quality: "auto", fetch_format: "auto" },
+      ],
+      resource_type: "image",
+    });
+
+    return { url: result.secure_url };
+  } catch (error) {
+    console.error("Cloudinary product upload error:", error);
+    return { error: "Failed to upload image. Please try again." };
+  }
+}
+
 export async function deleteAvatar(publicId: string): Promise<boolean> {
   try {
     await cloudinary.uploader.destroy(publicId);

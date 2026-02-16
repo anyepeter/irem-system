@@ -67,9 +67,56 @@ export const paymentSchema = z.object({
   paymentMethod: z.string().min(1, "Payment method is required"),
 });
 
+// Inventory schemas
+export const createProductSchema = z.object({
+  name: z.string().min(1, "Product name is required"),
+  description: z.string().optional().default(""),
+  categoryId: z.string().min(1, "Category is required"),
+  quantity: z.coerce.number().min(0, "Quantity must be 0 or more"),
+  reorderLevel: z.coerce.number().min(0, "Reorder level must be 0 or more").default(5),
+  unit: z.string().min(1, "Unit is required").default("pcs"),
+  purchasePrice: z.coerce.number().min(0, "Purchase price must be positive"),
+  sellingPrice: z.coerce.number().min(0, "Selling price must be positive"),
+  condition: z.enum(["NEW", "REFURBISHED", "USED"]).default("NEW"),
+  supplier: z.string().optional().default(""),
+  image: z.string().optional().default(""),
+});
+
+export const updateProductSchema = z.object({
+  name: z.string().min(1, "Product name is required").optional(),
+  description: z.string().optional(),
+  categoryId: z.string().min(1, "Category is required").optional(),
+  reorderLevel: z.coerce.number().min(0).optional(),
+  unit: z.string().min(1).optional(),
+  purchasePrice: z.coerce.number().min(0).optional(),
+  sellingPrice: z.coerce.number().min(0).optional(),
+  condition: z.enum(["NEW", "REFURBISHED", "USED"]).optional(),
+  status: z.enum(["ACTIVE", "DISCONTINUED", "OUT_OF_STOCK"]).optional(),
+  supplier: z.string().optional(),
+  image: z.string().optional(),
+});
+
+export const stockAdjustmentSchema = z.object({
+  productId: z.string().min(1, "Product is required"),
+  type: z.enum(["IN", "OUT", "ADJUSTMENT", "RETURN", "DAMAGE"]),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  reason: z.string().min(3, "Please provide a reason"),
+  notes: z.string().optional().default(""),
+  reference: z.string().optional().default(""),
+});
+
+export const createCategorySchema2 = z.object({
+  name: z.string().min(1, "Category name is required").max(50, "Category name too long"),
+  description: z.string().optional().default(""),
+});
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
 export type DiagnosticsInput = z.infer<typeof diagnosticsSchema>;
 export type PaymentInput = z.infer<typeof paymentSchema>;
+export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type StockAdjustmentInput = z.infer<typeof stockAdjustmentSchema>;
+export type CreateCategoryInput = z.infer<typeof createCategorySchema2>;

@@ -47,6 +47,26 @@ enum DeliveryMethod {
   HOME_DELIVERY
 }
 
+enum ProductCondition {
+  NEW
+  REFURBISHED
+  USED
+}
+
+enum ProductStatus {
+  ACTIVE
+  DISCONTINUED
+  OUT_OF_STOCK
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  RETURN
+  DAMAGE
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -64,6 +84,10 @@ model User {
   assignedTickets  Ticket[]        @relation("AssignedTickets")
   createdTickets   Ticket[]        @relation("CreatedTickets")
   statusUpdates    StatusHistory[]
+  paymentRecords   PaymentHistory[]
+  productsCreated  Product[]       @relation("ProductsCreated")
+  stockMovements   StockMovement[]
+  categoriesCreated Category[]
 
   @@index([clerkId])
   @@index([email])
@@ -141,7 +165,8 @@ model Ticket {
   completedAt DateTime?
 
   // Relations
-  statusHistory StatusHistory[]
+  statusHistory  StatusHistory[]
+  paymentHistory PaymentHistory[]
 
   @@index([ticketNumber])
   @@index([customerId])
@@ -163,4 +188,99 @@ model StatusHistory {
 
   @@index([ticketId])
   @@index([updatedById])
+}
+
+model PaymentHistory {
+  id            String   @id @default(cuid())
+  ticketId      String
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  amount        Decimal  @db.Decimal(10, 2)
+  paymentMethod String
+  note          String?  @db.Text
+  recordedById  String
+  recordedBy    User     @relation(fields: [recordedById], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([recordedById])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+
+  @@index([name])
+  @@index([createdById])
+}
+
+model Product {
+  id              String           @id @default(cuid())
+  sku             String           @unique
+  name            String
+  description     String?          @db.Text
+  categoryId      String
+  category        Category         @relation(fields: [categoryId], references: [id])
+  quantity        Int              @default(0)
+  reorderLevel    Int              @default(5)
+  unit            String           @default("pcs")
+  purchasePrice   Decimal          @db.Decimal(10, 2)
+  sellingPrice    Decimal          @db.Decimal(10, 2)
+  profitMargin    Decimal          @default(0) @db.Decimal(5, 2)
+  condition       ProductCondition @default(NEW)
+  status          ProductStatus    @default(ACTIVE)
+  image           String?
+  supplier        String?
+  lastRestockedAt DateTime?
+  createdById     String
+  createdBy       User             @relation("ProductsCreated", fields: [createdById], references: [id])
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  stockMovements StockMovement[]
+  lowStockAlerts LowStockAlert[]
+
+  @@index([sku])
+  @@index([name])
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdById])
+}
+
+model StockMovement {
+  id          String       @id @default(cuid())
+  productId   String
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type        MovementType
+  quantity    Int
+  reason      String
+  notes       String?      @db.Text
+  reference   String?
+  createdById String
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  createdAt   DateTime     @default(now())
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model LowStockAlert {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  threshold Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([isActive])
 }

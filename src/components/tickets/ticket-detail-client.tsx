@@ -23,8 +23,10 @@ import { PaymentForm } from "./payment-form";
 import {
   updateTicketStatus,
   markDiagnosticPaid,
+  updateExpectedReturnDate,
   type ActionResult,
 } from "@/actions/ticket";
+import { Input } from "@/components/ui/input";
 import { PRIORITY_COLORS, STATUS_LABELS } from "@/lib/ticket-constants";
 import {
   ArrowLeft,
@@ -39,6 +41,7 @@ import {
   AlertCircle,
   Loader2,
   MapPin,
+  Pencil,
 } from "lucide-react";
 
 type TicketDetail = {
@@ -84,6 +87,14 @@ type TicketDetail = {
     createdAt: string;
     updatedBy: { username: string };
   }>;
+  paymentHistory: Array<{
+    id: string;
+    amount: unknown;
+    paymentMethod: string;
+    note: string | null;
+    createdAt: string;
+    recordedBy: { username: string };
+  }>;
 };
 
 type Props = {
@@ -106,17 +117,30 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
   const [newStatus, setNewStatus] = useState(ticket.status);
   const [statusNotes, setStatusNotes] = useState("");
   const [diagPaidLoading, setDiagPaidLoading] = useState(false);
+  const [returnDate, setReturnDate] = useState(
+    ticket.expectedReturnDate
+      ? new Date(ticket.expectedReturnDate).toISOString().split("T")[0]
+      : ""
+  );
+  const [returnDateLoading, setReturnDateLoading] = useState(false);
+  const [returnDateResult, setReturnDateResult] = useState<ActionResult | null>(null);
+  const [editingDiagnostics, setEditingDiagnostics] = useState(false);
 
   const isAdmin = user.role === "ADMIN";
   const isCashier = user.role === "CASHIER";
   const isTechnician = user.role === "TECHNICIAN";
   const canManage = isAdmin || isCashier;
+  const canSetReturnDate =
+    isAdmin || (isTechnician && ticket.assignedTo.id === user.id);
   const canDiagnose =
     (isTechnician && ticket.assignedTo.id === user.id) || isAdmin;
+  const isTicketFinished = ["COMPLETED", "DELIVERED", "CANCELLED"].includes(ticket.status);
   const showDiagForm =
     canDiagnose &&
+    !isTicketFinished &&
     (ticket.status === "PENDING" ||
-      ticket.status === "IN_DIAGNOSTICS");
+      ticket.status === "IN_DIAGNOSTICS" ||
+      editingDiagnostics);
   const showPayment =
     canManage &&
     ticket.status !== "PENDING" &&
@@ -133,6 +157,20 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
       setStatusNotes("");
       setTimeout(() => {
         setStatusResult(null);
+        router.refresh();
+      }, 1000);
+    }
+  };
+
+  const handleReturnDateUpdate = async () => {
+    setReturnDateLoading(true);
+    setReturnDateResult(null);
+    const res = await updateExpectedReturnDate(ticket.id, returnDate);
+    setReturnDateResult(res);
+    setReturnDateLoading(false);
+    if (res.success) {
+      setTimeout(() => {
+        setReturnDateResult(null);
         router.refresh();
       }, 1000);
     }
@@ -181,9 +219,8 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
               <div className="flex items-center gap-3 mt-2">
                 <TicketStatusBadge status={ticket.status} />
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    PRIORITY_COLORS[ticket.priority] || ""
-                  }`}
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_COLORS[ticket.priority] || ""
+                    }`}
                 >
                   {ticket.priority}
                 </span>
@@ -298,8 +335,8 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
                 </Card>
               </motion.div>
 
-              {/* Diagnostics results (if submitted) */}
-              {ticket.diagnosticFindings && (
+              {/* Diagnostics results (if submitted and NOT editing) */}
+              {ticket.diagnosticFindings && !editingDiagnostics && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -307,9 +344,22 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
                 >
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">
-                        Diagnostic Results
-                      </CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">
+                          Diagnostic Results
+                        </CardTitle>
+                        {canDiagnose && !isTicketFinished && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-1.5 text-gray-500 hover:text-gray-700"
+                            onClick={() => setEditingDiagnostics(true)}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            Edit
+                          </Button>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div>
@@ -364,20 +414,35 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
                 </motion.div>
               )}
 
-              {/* Diagnostics form (for technician) */}
+              {/* Diagnostics form (for technician — initial submit or editing) */}
               {showDiagForm && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25 }}
                 >
+                  {editingDiagnostics && (
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-700">Editing Diagnostics</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingDiagnostics(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
                   <DiagnosticsForm
                     ticketId={ticket.id}
                     existingFindings={ticket.diagnosticFindings}
                     existingParts={ticket.requiredParts}
                     existingLabor={Number(ticket.laborCost || 0)}
                     existingPartsCost={Number(ticket.partsCost || 0)}
-                    onSuccess={() => router.refresh()}
+                    onSuccess={() => {
+                      setEditingDiagnostics(false);
+                      router.refresh();
+                    }}
                   />
                 </motion.div>
               )}
@@ -438,11 +503,10 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
                       <motion.div
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                          statusResult.success
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-red-50 text-red-700"
-                        }`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${statusResult.success
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-red-50 text-red-700"
+                          }`}
                       >
                         {statusResult.success ? (
                           <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -470,6 +534,62 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
                 </Card>
               </motion.div>
 
+              {/* Expected Return Date */}
+              {canSetReturnDate && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18 }}
+                >
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Expected Return Date
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Input
+                        type="date"
+                        value={returnDate}
+                        onChange={(e) => setReturnDate(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                      />
+
+                      {returnDateResult && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${returnDateResult.success
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-red-50 text-red-700"
+                            }`}
+                        >
+                          {returnDateResult.success ? (
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
+                          ) : (
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                          )}
+                          {returnDateResult.message}
+                        </motion.div>
+                      )}
+
+                      <Button
+                        onClick={handleReturnDateUpdate}
+                        className="w-full"
+                        disabled={returnDateLoading || !returnDate}
+                      >
+                        {returnDateLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Set Return Date"
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
               {/* Payment section */}
               {showPayment && (
                 <motion.div
@@ -486,6 +606,7 @@ export function TicketDetailClient({ ticket, user, backPath }: Props) {
                     diagnosticPaid={ticket.diagnosticPaid}
                     finalCost={Number(ticket.finalCost || ticket.estimatedCost || 0)}
                     deliveryFee={Number(ticket.deliveryFee)}
+                    paymentHistory={ticket.paymentHistory}
                     onSuccess={() => router.refresh()}
                   />
                 </motion.div>

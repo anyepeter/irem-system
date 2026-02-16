@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createTicket, searchCustomers, getTechnicians, type ActionResult } from "@/actions/ticket";
+import { createCustomer } from "@/actions/customer";
 import { DEVICE_TYPES, POPULAR_BRANDS, STANDARD_DIAGNOSTIC_FEE } from "@/lib/ticket-constants";
 import {
   Loader2,
@@ -23,7 +24,17 @@ import {
   Crown,
   Search,
   Wrench,
+  UserPlus,
+  MapPin,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 type Customer = { id: number; name: string; phone: string; isVIP: boolean };
 type Technician = { id: string; username: string };
@@ -39,6 +50,16 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [searchingCustomers, setSearchingCustomers] = useState(false);
+  const [searchDone, setSearchDone] = useState(false);
+
+  // Inline customer creation
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustPhone, setNewCustPhone] = useState("");
+  const [newCustAddress, setNewCustAddress] = useState("");
+  const [newCustIsVIP, setNewCustIsVIP] = useState(false);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [custCreateResult, setCustCreateResult] = useState<ActionResult | null>(null);
 
   // Technicians
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -46,11 +67,12 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
 
   // Form fields
   const [deviceType, setDeviceType] = useState("");
+  const [customDeviceType, setCustomDeviceType] = useState("");
   const [brand, setBrand] = useState("");
+  const [customBrand, setCustomBrand] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
   const [priority, setPriority] = useState("NORMAL");
-  const [expectedReturnDate, setExpectedReturnDate] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState("PICKUP");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -64,13 +86,16 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
   useEffect(() => {
     if (customerSearch.length < 2) {
       setCustomerResults([]);
+      setSearchDone(false);
       return;
     }
     setSearchingCustomers(true);
+    setSearchDone(false);
     const timer = setTimeout(async () => {
       const results = await searchCustomers(customerSearch);
       setCustomerResults(results);
       setSearchingCustomers(false);
+      setSearchDone(true);
       setShowCustomerDropdown(true);
     }, 300);
     return () => clearTimeout(timer);
@@ -78,6 +103,9 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
 
   const diagnosticFee = selectedCustomer?.isVIP ? 0 : STANDARD_DIAGNOSTIC_FEE;
   const initialTotal = diagnosticFee + (deliveryMethod === "HOME_DELIVERY" ? deliveryFee : 0);
+
+  const effectiveDeviceType = deviceType === "Other" ? customDeviceType : deviceType;
+  const effectiveBrand = brand === "Other" ? customBrand : brand;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,13 +115,13 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
 
     const formData = new FormData();
     formData.set("customerId", String(selectedCustomer.id));
-    formData.set("deviceType", deviceType);
-    formData.set("brand", brand);
+    formData.set("deviceType", effectiveDeviceType);
+    formData.set("brand", effectiveBrand);
     formData.set("serialNumber", serialNumber);
     formData.set("issueDescription", issueDescription);
     formData.set("assignedToId", assignedToId);
     formData.set("priority", priority);
-    formData.set("expectedReturnDate", expectedReturnDate);
+    formData.set("expectedReturnDate", "");
     formData.set("deliveryMethod", deliveryMethod);
     formData.set("deliveryAddress", deliveryAddress);
     formData.set("deliveryFee", String(deliveryMethod === "HOME_DELIVERY" ? deliveryFee : 0));
@@ -105,6 +133,41 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
     if (res.success && res.data?.id) {
       setTimeout(() => {
         router.push(`${basePath}/${res.data!.id}`);
+      }, 1000);
+    }
+  };
+
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingCustomer(true);
+    setCustCreateResult(null);
+
+    const formData = new FormData();
+    formData.set("name", newCustName);
+    formData.set("phone", newCustPhone);
+    formData.set("address", newCustAddress);
+    formData.set("isVIP", String(newCustIsVIP));
+
+    const res = await createCustomer(formData);
+    setCustCreateResult(res);
+    setCreatingCustomer(false);
+
+    if (res.success && res.data) {
+      const newCustomer: Customer = {
+        id: res.data.id as number,
+        name: res.data.name as string,
+        phone: res.data.phone as string,
+        isVIP: res.data.isVIP as boolean,
+      };
+      setSelectedCustomer(newCustomer);
+      setTimeout(() => {
+        setShowCreateCustomer(false);
+        setCustCreateResult(null);
+        setNewCustName("");
+        setNewCustPhone("");
+        setNewCustAddress("");
+        setNewCustIsVIP(false);
+        setCustomerSearch("");
       }, 1000);
     }
   };
@@ -184,6 +247,26 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
                     <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                   </div>
                 )}
+                {/* No results — show Add New Customer button */}
+                {searchDone && customerResults.length === 0 && customerSearch.length >= 2 && !searchingCustomers && (
+                  <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border rounded-lg shadow-lg p-3">
+                    <p className="text-sm text-gray-500 mb-2">No customers found for &quot;{customerSearch}&quot;</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() => {
+                        setNewCustName(customerSearch);
+                        setShowCreateCustomer(true);
+                        setShowCustomerDropdown(false);
+                      }}
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Add New Customer
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
             {selectedCustomer && (
@@ -206,7 +289,7 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Device Type</Label>
-                <Select value={deviceType} onValueChange={setDeviceType}>
+                <Select value={deviceType} onValueChange={(v) => { setDeviceType(v); if (v !== "Other") setCustomDeviceType(""); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select device type" />
                   </SelectTrigger>
@@ -216,10 +299,20 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
                     ))}
                   </SelectContent>
                 </Select>
+                {deviceType === "Other" && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+                    <Input
+                      value={customDeviceType}
+                      onChange={(e) => setCustomDeviceType(e.target.value)}
+                      placeholder="Enter device type..."
+                      required
+                    />
+                  </motion.div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Brand</Label>
-                <Select value={brand} onValueChange={setBrand}>
+                <Select value={brand} onValueChange={(v) => { setBrand(v); if (v !== "Other") setCustomBrand(""); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select brand" />
                   </SelectTrigger>
@@ -229,6 +322,16 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
                     ))}
                   </SelectContent>
                 </Select>
+                {brand === "Other" && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+                    <Input
+                      value={customBrand}
+                      onChange={(e) => setCustomBrand(e.target.value)}
+                      placeholder="Enter brand name..."
+                      required
+                    />
+                  </motion.div>
+                )}
               </div>
             </div>
             <div className="space-y-2">
@@ -290,15 +393,6 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Expected Return Date (Optional)</Label>
-              <Input
-                type="date"
-                value={expectedReturnDate}
-                onChange={(e) => setExpectedReturnDate(e.target.value)}
-                min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-              />
             </div>
           </CardContent>
         </Card>
@@ -398,11 +492,10 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
           <motion.div
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${
-              result.success
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${result.success
                 ? "bg-emerald-50 text-emerald-700"
                 : "bg-red-50 text-red-700"
-            }`}
+              }`}
           >
             {result.success ? (
               <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -417,7 +510,7 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
         <Button
           type="submit"
           className="w-full sm:w-auto"
-          disabled={loading || !selectedCustomer || !deviceType || !brand || !assignedToId}
+          disabled={loading || !selectedCustomer || !effectiveDeviceType || !effectiveBrand || !assignedToId}
         >
           {loading ? (
             <>
@@ -429,6 +522,98 @@ export function CreateTicketForm({ basePath }: { basePath: string }) {
           )}
         </Button>
       </form>
+
+      {/* Inline Create Customer Dialog */}
+      <Dialog open={showCreateCustomer} onOpenChange={(v) => { setShowCreateCustomer(v); if (!v) setCustCreateResult(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              Add New Customer
+            </DialogTitle>
+            <DialogDescription>
+              Create a new customer and auto-select them for this ticket.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateCustomer} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-cust-name">Customer Name</Label>
+              <Input
+                id="new-cust-name"
+                value={newCustName}
+                onChange={(e) => setNewCustName(e.target.value)}
+                placeholder="John Doe"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-cust-phone">Phone Number (WhatsApp)</Label>
+              <Input
+                id="new-cust-phone"
+                type="tel"
+                value={newCustPhone}
+                onChange={(e) => setNewCustPhone(e.target.value)}
+                placeholder="+237 6XX XXX XXX"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-cust-address" className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                Address
+              </Label>
+              <Input
+                id="new-cust-address"
+                value={newCustAddress}
+                onChange={(e) => setNewCustAddress(e.target.value)}
+                placeholder="123 Main St, City"
+                required
+              />
+            </div>
+            <div className="flex items-center justify-between py-2 px-4 rounded-xl bg-gray-50">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-500" />
+                <div>
+                  <Label className="text-sm font-medium">VIP Customer</Label>
+                  <p className="text-xs text-gray-500">Mark as a priority customer</p>
+                </div>
+              </div>
+              <Switch checked={newCustIsVIP} onCheckedChange={setNewCustIsVIP} />
+            </div>
+
+            {custCreateResult && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${custCreateResult.success ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                  }`}
+              >
+                {custCreateResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                )}
+                {custCreateResult.message}
+              </motion.div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={creatingCustomer}>
+              {creatingCustomer ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  Create & Select Customer
+                </>
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

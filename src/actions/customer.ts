@@ -52,7 +52,7 @@ export async function createCustomer(formData: FormData): Promise<ActionResult> 
       return { success: false, message: "A customer with this phone number already exists" };
     }
 
-    await db.customer.create({
+    const newCustomer = await db.customer.create({
       data: {
         name: validation.data.name,
         phone: validation.data.phone,
@@ -68,6 +68,12 @@ export async function createCustomer(formData: FormData): Promise<ActionResult> 
     return {
       success: true,
       message: `Customer "${validation.data.name}" created successfully`,
+      data: {
+        id: newCustomer.id,
+        name: newCustomer.name,
+        phone: newCustomer.phone,
+        isVIP: newCustomer.isVIP,
+      },
     };
   } catch (error) {
     console.error("Create customer error:", error);

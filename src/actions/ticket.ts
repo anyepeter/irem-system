@@ -211,6 +211,10 @@ export async function getTicketById(ticketId: string) {
           include: { updatedBy: { select: { username: true } } },
           orderBy: { createdAt: "desc" },
         },
+        paymentHistory: {
+          include: { recordedBy: { select: { username: true } } },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -263,6 +267,12 @@ export async function submitDiagnostics(
     if (!ticket) return { success: false, message: "Ticket not found" };
 
     // Only assigned technician or admin can submit diagnostics
+    if (user.role === "CASHIER") {
+      return {
+        success: false,
+        message: "Cashiers cannot submit or edit diagnostics",
+      };
+    }
     if (user.role === "TECHNICIAN" && ticket.assignedToId !== user.id) {
       return {
         success: false,
@@ -270,14 +280,12 @@ export async function submitDiagnostics(
       };
     }
 
-    if (
-      user.role === "TECHNICIAN" &&
-      ticket.status !== "IN_DIAGNOSTICS" &&
-      ticket.status !== "PENDING"
-    ) {
+    // Block editing if ticket is completed/cancelled/delivered
+    const blockedStatuses = ["COMPLETED", "DELIVERED", "CANCELLED"];
+    if (blockedStatuses.includes(ticket.status)) {
       return {
         success: false,
-        message: "Ticket is not in diagnostic phase",
+        message: "Cannot edit diagnostics for a completed or cancelled ticket",
       };
     }
 
@@ -299,29 +307,52 @@ export async function submitDiagnostics(
     const d = validation.data;
     const estimatedCost = d.laborCost + d.partsCost;
 
+    // Only change status to AWAITING_APPROVAL if it's the first diagnostic submission
+    const isFirstDiagnostic = !ticket.diagnosticFindings;
+    const updateData: Record<string, unknown> = {
+      diagnosticFindings: d.diagnosticFindings,
+      requiredParts: d.requiredParts || null,
+      laborCost: d.laborCost,
+      partsCost: d.partsCost,
+      estimatedCost,
+      // Recalculate totalAmount to include diagnostic costs
+      totalAmount:
+        Number(ticket.diagnosticFee) + estimatedCost + Number(ticket.deliveryFee),
+    };
+
+    if (isFirstDiagnostic) {
+      updateData.status = "AWAITING_APPROVAL";
+      updateData.statusHistory = {
+        create: {
+          status: "AWAITING_APPROVAL",
+          notes: `Diagnostics completed. Estimated cost: ${estimatedCost}`,
+          updatedById: user.id,
+        },
+      };
+    } else {
+      updateData.statusHistory = {
+        create: {
+          status: ticket.status,
+          notes: `Diagnostics updated. Estimated cost: ${estimatedCost}`,
+          updatedById: user.id,
+        },
+      };
+    }
+
     await db.ticket.update({
       where: { id: ticketId },
-      data: {
-        diagnosticFindings: d.diagnosticFindings,
-        requiredParts: d.requiredParts || null,
-        laborCost: d.laborCost,
-        partsCost: d.partsCost,
-        estimatedCost,
-        status: "AWAITING_APPROVAL",
-        statusHistory: {
-          create: {
-            status: "AWAITING_APPROVAL",
-            notes: `Diagnostics completed. Estimated cost: ${estimatedCost}`,
-            updatedById: user.id,
-          },
-        },
-      },
+      data: updateData,
     });
 
     revalidatePath("/admin/tickets");
     revalidatePath("/cashier/tickets");
     revalidatePath("/technician/my-tickets");
-    return { success: true, message: "Diagnostics submitted successfully" };
+    return {
+      success: true,
+      message: isFirstDiagnostic
+        ? "Diagnostics submitted successfully"
+        : "Diagnostics updated successfully",
+    };
   } catch (err) {
     console.error("Submit diagnostics error:", err);
     return { success: false, message: "An unexpected error occurred" };
@@ -388,6 +419,43 @@ export async function updateTicketStatus(
     return { success: true, message: `Status updated to ${newStatus}` };
   } catch (err) {
     console.error("Update status error:", err);
+    return { success: false, message: "An unexpected error occurred" };
+  }
+}
+
+export async function updateExpectedReturnDate(
+  ticketId: string,
+  date: string
+): Promise<ActionResult> {
+  try {
+    const { error, user } = await requireAuth();
+    if (error || !user)
+      return { success: false, message: error || "Not authenticated" };
+
+    const ticket = await db.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return { success: false, message: "Ticket not found" };
+
+    // Only assigned technician or admin can set expected return date
+    if (user.role === "TECHNICIAN" && ticket.assignedToId !== user.id) {
+      return { success: false, message: "Not authorized" };
+    }
+    if (user.role === "CASHIER") {
+      return { success: false, message: "Only technicians and admins can set expected return date" };
+    }
+
+    await db.ticket.update({
+      where: { id: ticketId },
+      data: {
+        expectedReturnDate: date ? new Date(date) : null,
+      },
+    });
+
+    revalidatePath("/admin/tickets");
+    revalidatePath("/cashier/tickets");
+    revalidatePath("/technician/my-tickets");
+    return { success: true, message: "Expected return date updated" };
+  } catch (err) {
+    console.error("Update expected return date error:", err);
     return { success: false, message: "An unexpected error occurred" };
   }
 }
@@ -476,13 +544,20 @@ export async function recordPayment(
         statusHistory: {
           create: {
             status: ticket.status,
-            notes: `Payment of ${validation.data.amountPaid} recorded via ${validation.data.paymentMethod}`,
+            notes: `Payment of ${validation.data.amountPaid.toLocaleString()} XAF recorded via ${validation.data.paymentMethod}`,
             updatedById: user.id,
+          },
+        },
+        paymentHistory: {
+          create: {
+            amount: validation.data.amountPaid,
+            paymentMethod: validation.data.paymentMethod,
+            note: `Payment of ${validation.data.amountPaid.toLocaleString()} XAF`,
+            recordedById: user.id,
           },
         },
       },
     });
-
     revalidatePath("/admin/tickets");
     revalidatePath("/cashier/tickets");
     return { success: true, message: "Payment recorded successfully" };
@@ -601,5 +676,72 @@ export async function searchCustomers(search: string) {
     return customers;
   } catch {
     return [];
+  }
+}
+
+// ─── Payment History ─────────────────────────────────────────
+
+export async function getAllPaymentHistory({
+  page = 1,
+  limit = 20,
+  search = "",
+  dateFrom = "",
+  dateTo = "",
+}: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+} = {}) {
+  try {
+    const { error, user } = await requireTicketAccess();
+    if (error || !user) return { payments: [], total: 0 };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { ticket: { ticketNumber: { contains: search, mode: "insensitive" } } },
+        { ticket: { customer: { name: { contains: search, mode: "insensitive" } } } },
+        { recordedBy: { username: { contains: search, mode: "insensitive" } } },
+        { paymentMethod: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const [payments, total] = await Promise.all([
+      db.paymentHistory.findMany({
+        where,
+        include: {
+          ticket: {
+            select: {
+              ticketNumber: true,
+              customer: { select: { name: true, phone: true } },
+            },
+          },
+          recordedBy: { select: { username: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.paymentHistory.count({ where }),
+    ]);
+
+    return { payments, total };
+  } catch (err) {
+    console.error("Get payment history error:", err);
+    return { payments: [], total: 0 };
   }
 }
