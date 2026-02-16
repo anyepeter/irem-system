@@ -17,6 +17,7 @@ import {
   LogOut,
   UserCircle,
   Contact,
+  ClipboardList,
 } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
 
@@ -30,17 +31,20 @@ const adminItems: SidebarItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Customers", href: "/admin/customers", icon: Contact },
+  { label: "Tickets", href: "/admin/tickets", icon: ClipboardList },
   { label: "My Profile", href: "/admin/profile", icon: UserCircle },
 ];
 
 const cashierItems: SidebarItem[] = [
   { label: "Dashboard", href: "/cashier/dashboard", icon: LayoutDashboard },
   { label: "Customers", href: "/cashier/customers", icon: Contact },
+  { label: "Tickets", href: "/cashier/tickets", icon: ClipboardList },
   { label: "My Profile", href: "/cashier/profile", icon: UserCircle },
 ];
 
 const technicianItems: SidebarItem[] = [
   { label: "Dashboard", href: "/technician/dashboard", icon: LayoutDashboard },
+  { label: "My Tickets", href: "/technician/my-tickets", icon: ClipboardList },
   { label: "My Profile", href: "/technician/profile", icon: UserCircle },
 ];
 
@@ -90,7 +94,7 @@ export function Sidebar({ role, username }: { role: "ADMIN" | "CASHIER" | "TECHN
       {/* Nav items */}
       <nav className="flex-1 p-3 space-y-1">
         {config.items.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
           return (
             <Link
               key={item.href}

@@ -16,6 +16,7 @@ type User = {
   email: string;
   password: string;
   phone: string;
+  address: string;
   avatar: string | null;
   role: "ADMIN" | "CASHIER" | "TECHNICIAN";
   createdAt: Date;

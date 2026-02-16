@@ -14,6 +14,39 @@ enum Role {
   TECHNICIAN
 }
 
+enum TicketStatus {
+  PENDING
+  IN_DIAGNOSTICS
+  AWAITING_APPROVAL
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  WAITING_FOR_PARTS
+  COMPLETED
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
+enum DeliveryMethod {
+  PICKUP
+  HOME_DELIVERY
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -21,12 +54,16 @@ model User {
   email     String   @unique
   password  String   @default("")
   phone     String
+  address   String   @default("")
   avatar    String?
   role      Role
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  customers Customer[]
+  customers        Customer[]
+  assignedTickets  Ticket[]        @relation("AssignedTickets")
+  createdTickets   Ticket[]        @relation("CreatedTickets")
+  statusUpdates    StatusHistory[]
 
   @@index([clerkId])
   @@index([email])
@@ -45,7 +82,85 @@ model Customer {
   createdById String
   createdBy   User   @relation(fields: [createdById], references: [id])
 
+  tickets Ticket[]
+
   @@index([phone])
   @@index([name])
   @@index([createdById])
+}
+
+model Ticket {
+  id           String   @id @default(cuid())
+  ticketNumber String   @unique
+
+  // Customer & Device Info
+  customerId       Int
+  customer         Customer @relation(fields: [customerId], references: [id])
+  deviceType       String
+  brand            String
+  serialNumber     String?
+  issueDescription String   @db.Text
+
+  // Assignment
+  assignedToId String
+  assignedTo   User   @relation("AssignedTickets", fields: [assignedToId], references: [id])
+
+  // Status & Workflow
+  status             TicketStatus   @default(PENDING)
+  priority           Priority       @default(NORMAL)
+  expectedReturnDate DateTime?
+
+  // Diagnostic Phase
+  diagnosticFee      Decimal @default(0) @db.Decimal(10, 2)
+  diagnosticPaid     Boolean @default(false)
+  diagnosticFindings String? @db.Text
+  requiredParts      String? @db.Text
+
+  // Repair Phase
+  estimatedCost Decimal? @db.Decimal(10, 2)
+  finalCost     Decimal? @db.Decimal(10, 2)
+  laborCost     Decimal? @db.Decimal(10, 2)
+  partsCost     Decimal? @db.Decimal(10, 2)
+
+  // Payment
+  totalAmount   Decimal       @default(0) @db.Decimal(10, 2)
+  amountPaid    Decimal       @default(0) @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(UNPAID)
+  paymentMethod String?
+
+  // Delivery
+  deliveryMethod  DeliveryMethod @default(PICKUP)
+  deliveryAddress String?
+  deliveryFee     Decimal        @default(0) @db.Decimal(10, 2)
+
+  // Tracking
+  createdById String
+  createdBy   User     @relation("CreatedTickets", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+
+  // Relations
+  statusHistory StatusHistory[]
+
+  @@index([ticketNumber])
+  @@index([customerId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model StatusHistory {
+  id          String       @id @default(cuid())
+  ticketId    String
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  status      TicketStatus
+  notes       String?      @db.Text
+  updatedById String
+  updatedBy   User         @relation(fields: [updatedById], references: [id])
+  createdAt   DateTime     @default(now())
+
+  @@index([ticketId])
+  @@index([updatedById])
 }

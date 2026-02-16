@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Shield, DollarSign, Wrench, Contact, Activity, BarChart3, TrendingUp } from "lucide-react";
+import { Users, Shield, DollarSign, Wrench, Contact, ClipboardList, Clock, CheckCircle, Activity, BarChart3, TrendingUp } from "lucide-react";
 
 type Props = {
   admin: {
@@ -26,9 +26,17 @@ type Props = {
     vip: number;
     regular: number;
   };
+  ticketStats: {
+    total: number;
+    pending: number;
+    inProgress: number;
+    completedToday: number;
+    completedThisWeek: number;
+    revenueThisMonth: number;
+  };
 };
 
-export function AdminDashboardClient({ admin, stats, customerStats }: Props) {
+export function AdminDashboardClient({ admin, stats, customerStats, ticketStats }: Props) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar role={admin.role} username={admin.username} />
@@ -43,7 +51,7 @@ export function AdminDashboardClient({ admin, stats, customerStats }: Props) {
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6">
-          {/* Stats Grid */}
+          {/* User Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <Link href="/admin/users">
               <StatsCard title="Total Users" value={stats.total} icon={Users} color="blue" delay={0} />
@@ -56,12 +64,23 @@ export function AdminDashboardClient({ admin, stats, customerStats }: Props) {
             </Link>
           </div>
 
+          {/* Ticket Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <Link href="/admin/tickets">
+              <StatsCard title="Total Tickets" value={ticketStats.total} icon={ClipboardList} color="blue" delay={0.5} />
+            </Link>
+            <StatsCard title="Pending" value={ticketStats.pending} icon={Clock} color="amber" delay={0.6} />
+            <StatsCard title="In Progress" value={ticketStats.inProgress} icon={Wrench} color="purple" delay={0.7} />
+            <StatsCard title="Completed Today" value={ticketStats.completedToday} icon={CheckCircle} color="emerald" delay={0.8} />
+            <StatsCard title="Revenue (Month)" value={ticketStats.revenueThisMonth} icon={DollarSign} color="blue" delay={0.9} />
+          </div>
+
           {/* Placeholder cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
+              transition={{ delay: 1.0, duration: 0.4 }}
             >
               <Card>
                 <CardHeader>
@@ -83,7 +102,7 @@ export function AdminDashboardClient({ admin, stats, customerStats }: Props) {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.4 }}
+              transition={{ delay: 1.1, duration: 0.4 }}
             >
               <Card>
                 <CardHeader>

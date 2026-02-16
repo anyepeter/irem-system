@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createUser, type ActionResult } from "@/actions/user";
-import { UserPlus, Upload, Loader2, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Upload, Loader2, CheckCircle2, AlertCircle, Eye, EyeOff, MapPin } from "lucide-react";
 import Image from "next/image";
 
 export function CreateUserDialog({ onSuccess }: { onSuccess?: () => void } = {}) {
@@ -144,6 +144,15 @@ export function CreateUserDialog({ onSuccess }: { onSuccess?: () => void } = {})
           <div className="space-y-2">
             <Label htmlFor="phone">Phone</Label>
             <Input id="phone" name="phone" type="tel" placeholder="+1234567890" required />
+          </div>
+
+          {/* Address */}
+          <div className="space-y-2">
+            <Label htmlFor="address" className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-gray-400" />
+              Address
+            </Label>
+            <Input id="address" name="address" placeholder="123 Main St, City" />
           </div>
 
           {/* Role */}

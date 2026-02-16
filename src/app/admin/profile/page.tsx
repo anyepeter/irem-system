@@ -11,6 +11,7 @@ export default async function AdminProfilePage() {
         email: user.email,
         password: user.password,
         phone: user.phone,
+        address: user.address,
         avatar: user.avatar,
         role: user.role,
         createdAt: user.createdAt,

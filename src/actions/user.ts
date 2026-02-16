@@ -23,6 +23,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
       phone: formData.get("phone") as string,
+      address: (formData.get("address") as string) || "",
       role: formData.get("role") as string,
       avatar: "",
     };
@@ -74,6 +75,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
           email: validation.data.email,
           password: validation.data.password,
           phone: validation.data.phone,
+          address: validation.data.address || "",
           role: validation.data.role as Role,
           avatar: avatarUrl,
         },
@@ -159,6 +161,7 @@ export async function updateUser(
     const username = formData.get("username") as string;
     const email = formData.get("email") as string;
     const phone = formData.get("phone") as string;
+    const address = (formData.get("address") as string) || "";
     const password = formData.get("password") as string;
     const role = formData.get("role") as Role;
 
@@ -218,6 +221,7 @@ export async function updateUser(
     const dbUpdate: Record<string, unknown> = {
       username,
       phone,
+      address,
       role,
       avatar: avatarUrl,
     };

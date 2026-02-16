@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { updateUser, type ActionResult } from "@/actions/user";
-import { Pencil, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Pencil, Upload, Loader2, CheckCircle2, AlertCircle, MapPin } from "lucide-react";
 import Image from "next/image";
 
 type User = {
@@ -30,6 +30,7 @@ type User = {
   email: string;
   password: string;
   phone: string;
+  address: string;
   avatar: string | null;
   role: "ADMIN" | "CASHIER" | "TECHNICIAN";
   createdAt: Date;
@@ -51,6 +52,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.phone);
+  const [address, setAddress] = useState(user.address);
   const [password, setPassword] = useState(user.password);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,6 +62,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
       setUsername(user.username);
       setEmail(user.email);
       setPhone(user.phone);
+      setAddress(user.address);
       setPassword(user.password);
       setRole(user.role);
       setAvatarPreview(null);
@@ -162,6 +165,21 @@ export function EditUserDialog({ user, open, onOpenChange, onSuccess }: EditUser
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+            />
+          </div>
+
+          {/* Address */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-address" className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-gray-400" />
+              Address
+            </Label>
+            <Input
+              id="edit-address"
+              name="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="123 Main St, City"
             />
           </div>
 

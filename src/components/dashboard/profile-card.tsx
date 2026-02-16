@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, User, Mail, Phone, Shield, Calendar, Lock } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Phone, MapPin, Shield, Calendar, Lock } from "lucide-react";
 import { getInitials, formatDate } from "@/lib/utils";
 
 type ProfileUser = {
@@ -14,6 +14,7 @@ type ProfileUser = {
   email: string;
   password: string;
   phone: string;
+  address: string;
   avatar: string | null;
   role: "ADMIN" | "CASHIER" | "TECHNICIAN";
   createdAt: string;
@@ -32,6 +33,7 @@ export function ProfileCard({ user }: { user: ProfileUser }) {
     { label: "Username", value: user.username, icon: User },
     { label: "Email", value: user.email, icon: Mail },
     { label: "Phone", value: user.phone || "-", icon: Phone },
+    { label: "Address", value: user.address || "-", icon: MapPin },
     { label: "Role", value: user.role, icon: Shield, isBadge: true },
     { label: "Joined", value: formatDate(user.createdAt), icon: Calendar },
   ];
