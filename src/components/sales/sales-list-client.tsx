@@ -63,15 +63,26 @@ type Stats = {
   creditTotal: number;
 } | null;
 
+type SummaryStats = {
+  totalSales: number;
+  paidSales: number;
+  pendingSales: number;
+  creditSales: number;
+  cancelledSales: number;
+  totalRevenue: number;
+  totalProfit: number;
+} | null;
+
 type Props = {
   user: { username: string; avatar: string | null; role: string };
   initialSales: Sale[];
   initialTotal: number;
   stats: Stats;
+  summaryStats: SummaryStats;
   basePath: string;
 };
 
-export function SalesListClient({ user, initialSales, initialTotal, stats, basePath }: Props) {
+export function SalesListClient({ user, initialSales, initialTotal, stats, summaryStats, basePath }: Props) {
   const [sales, setSales] = useState(initialSales);
   const [total, setTotal] = useState(initialTotal);
   const [search, setSearch] = useState("");
@@ -130,19 +141,54 @@ export function SalesListClient({ user, initialSales, initialTotal, stats, baseP
             </div>
           )}
 
+          {/* Sales Overview Summary */}
+          {summaryStats && (
+            <Card className="p-0 overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50/80 border-b">
+                <h3 className="text-sm font-semibold text-gray-700">Sales Overview (All Time)</h3>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-gray-100">
+                <div className="p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => { setStatusFilter("ALL"); setPaymentFilter("ALL"); applyFilters({ status: "ALL", paymentStatus: "ALL" }); }}>
+                  <p className="text-xl font-bold text-gray-900">{summaryStats.totalSales}</p>
+                  <p className="text-xs text-gray-500">Total Sales</p>
+                </div>
+                <div className="p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => { setPaymentFilter("PAID"); applyFilters({ paymentStatus: "PAID" }); }}>
+                  <p className="text-xl font-bold text-emerald-600">{summaryStats.paidSales}</p>
+                  <p className="text-xs text-gray-500">Paid</p>
+                </div>
+                <div className="p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => { setPaymentFilter("UNPAID"); applyFilters({ paymentStatus: "UNPAID" }); }}>
+                  <p className="text-xl font-bold text-amber-600">{summaryStats.pendingSales}</p>
+                  <p className="text-xs text-gray-500">Pending Payment</p>
+                </div>
+                <div className="p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => { setStatusFilter("ALL"); setPaymentFilter("ALL"); applyFilters({ status: "ALL", paymentStatus: "ALL" }); }}>
+                  <p className="text-xl font-bold text-purple-600">{summaryStats.creditSales}</p>
+                  <p className="text-xs text-gray-500">Credit Sales</p>
+                </div>
+                <div className="p-4 text-center col-span-2 sm:col-span-1">
+                  <p className="text-xl font-bold text-gray-900">{formatCurrency(summaryStats.totalRevenue)} XAF</p>
+                  <p className="text-xs text-gray-500">Total Revenue</p>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
             <div className="flex flex-wrap gap-2">
               <Link href={`${basePath}/sales/pos`}>
                 <Button><Plus className="w-4 h-4 mr-2" /> New Sale</Button>
               </Link>
-              <Link href={`${basePath}/sales/history`}>
+              <Link href={`${basePath}/history`}>
                 <Button variant="outline"><History className="w-4 h-4 mr-2" /> Sales History</Button>
               </Link>
               <Link href={`${basePath}/sales/credit`}>
                 <Button variant="outline"><CreditCard className="w-4 h-4 mr-2" /> Credit Sales</Button>
               </Link>
-              <Link href={`${basePath}/sales/reports`}>
+              <Link href={`${basePath}/reports`}>
                 <Button variant="outline"><TrendingUp className="w-4 h-4 mr-2" /> Reports</Button>
               </Link>
             </div>

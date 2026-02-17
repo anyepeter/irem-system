@@ -19,6 +19,8 @@ import {
   Receipt,
   Package,
   ShoppingCart,
+  ClipboardClock,
+  Ratio,
 } from "lucide-react";
 
 type SidebarItem = {
@@ -34,7 +36,9 @@ const adminItems: SidebarItem[] = [
   { label: "Tickets", href: "/admin/tickets", icon: ClipboardList },
   { label: "Inventory", href: "/admin/inventory", icon: Package },
   { label: "Sales", href: "/admin/sales", icon: ShoppingCart },
-  { label: "Payments", href: "/admin/payments", icon: Receipt },
+  { label: "Sales history", href: "/admin/history", icon: ClipboardClock },
+  { label: "Sales report", href: "/admin/reports", icon: Ratio },
+  { label: "Ticket Payments", href: "/admin/payments", icon: Receipt },
 ];
 
 const cashierItems: SidebarItem[] = [
@@ -43,7 +47,9 @@ const cashierItems: SidebarItem[] = [
   { label: "Tickets", href: "/cashier/tickets", icon: ClipboardList },
   { label: "Inventory", href: "/cashier/inventory", icon: Package },
   { label: "Sales", href: "/cashier/sales", icon: ShoppingCart },
-  { label: "Payments", href: "/cashier/payments", icon: Receipt },
+  { label: "Sales history", href: "/cashier/history", icon: ClipboardClock },
+  { label: "Sales report", href: "/cashier/reports", icon: Ratio },
+  { label: "Ticket Payments", href: "/cashier/payments", icon: Receipt },
 ];
 
 const technicianItems: SidebarItem[] = [

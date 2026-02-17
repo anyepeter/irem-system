@@ -1,15 +1,49 @@
 import { requireAdmin } from "@/lib/auth";
-import { getUserStats } from "@/actions/user";
-import { getCustomerStats } from "@/actions/customer";
-import { getTicketStats } from "@/actions/ticket";
+import {
+  getAdminFinancialStats,
+  getAdminTodayStats,
+  getAdminSystemCounts,
+  getRevenueChartData,
+  getDailySalesChartData,
+  getTicketStatusChartData,
+  getPaymentMethodChartData,
+  getStockAlerts,
+  getRecentActivity,
+  getTopSellingProducts,
+  getTopTechnicians,
+  getOutstandingCredit,
+} from "@/actions/dashboard";
 import { AdminDashboardClient } from "./client";
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
-  const [stats, customerStats, ticketStats] = await Promise.all([
-    getUserStats(),
-    getCustomerStats(),
-    getTicketStats(),
+
+  const [
+    financial,
+    todayStats,
+    systemCounts,
+    revenueChart,
+    dailySalesChart,
+    ticketStatusChart,
+    paymentMethodChart,
+    stockAlerts,
+    recentActivity,
+    topProducts,
+    topTechnicians,
+    creditData,
+  ] = await Promise.all([
+    getAdminFinancialStats(),
+    getAdminTodayStats(),
+    getAdminSystemCounts(),
+    getRevenueChartData(6),
+    getDailySalesChartData(7),
+    getTicketStatusChartData(),
+    getPaymentMethodChartData(),
+    getStockAlerts(8),
+    getRecentActivity(8),
+    getTopSellingProducts(5),
+    getTopTechnicians(5),
+    getOutstandingCredit(5),
   ]);
 
   return (
@@ -20,9 +54,18 @@ export default async function AdminDashboardPage() {
         avatar: admin.avatar,
         role: admin.role,
       }}
-      stats={stats}
-      customerStats={customerStats}
-      ticketStats={ticketStats || { total: 0, pending: 0, inProgress: 0, completedToday: 0, completedThisWeek: 0, revenueThisMonth: 0 }}
+      financial={financial}
+      todayStats={todayStats}
+      systemCounts={systemCounts}
+      revenueChart={revenueChart}
+      dailySalesChart={dailySalesChart}
+      ticketStatusChart={ticketStatusChart}
+      paymentMethodChart={paymentMethodChart}
+      stockAlerts={stockAlerts}
+      recentActivity={recentActivity}
+      topProducts={topProducts}
+      topTechnicians={topTechnicians}
+      creditData={creditData}
     />
   );
 }
