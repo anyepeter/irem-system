@@ -243,7 +243,7 @@ export function PaymentHistoryClient({
                                     </div>
                                 ) : (
                                     <div className="overflow-x-auto">
-                                        <table className="w-full">
+                                        <table className="min-w-[700px] w-full">
                                             <thead>
                                                 <tr className="border-b bg-gray-50/50">
                                                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">

@@ -195,7 +195,7 @@ export function SaleDetailClient({ user, sale, basePath }: Props) {
                 <Package className="w-5 h-5" /> Items ({sale.items.length})
               </h3>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[700px]">
                   <thead>
                     <tr className="border-b bg-gray-50/50">
                       <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Product</th>

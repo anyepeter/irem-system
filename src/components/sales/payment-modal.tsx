@@ -106,7 +106,7 @@ export function PaymentModal({ open, onClose, saleId, saleNumber, totalAmount, a
           {/* Payment Method Selection */}
           <div>
             <Label>Payment Method *</Label>
-            <div className="grid grid-cols-1 gap-2 mt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 mt-2">
               {PAYMENT_METHODS.map((m) => (
                 <button
                   key={m.value}

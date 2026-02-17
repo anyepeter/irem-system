@@ -727,3 +727,186 @@ export async function getSalesSummaryStats() {
     totalProfit: toNumber(profitResult[0]?.total),
   };
 }
+
+// ─── TECHNICIAN: Dashboard Stats ─────────────────────────
+
+export async function getTechnicianDashboardStats(technicianId: string) {
+  const thisMonth = startOfMonth();
+
+  const [totalAssigned, pendingDiagnostics, inProgress, completedThisMonth, awaitingApproval] =
+    await Promise.all([
+      db.ticket.count({ where: { assignedToId: technicianId } }),
+      db.ticket.count({
+        where: { assignedToId: technicianId, status: { in: ["PENDING", "IN_DIAGNOSTICS"] } },
+      }),
+      db.ticket.count({
+        where: { assignedToId: technicianId, status: { in: ["IN_PROGRESS", "WAITING_FOR_PARTS"] } },
+      }),
+      db.ticket.count({
+        where: { assignedToId: technicianId, status: "COMPLETED", completedAt: { gte: thisMonth } },
+      }),
+      db.ticket.count({
+        where: { assignedToId: technicianId, status: "AWAITING_APPROVAL" },
+      }),
+    ]);
+
+  // Average completion time (in days)
+  const completedTickets = await db.ticket.findMany({
+    where: { assignedToId: technicianId, status: "COMPLETED", completedAt: { not: null } },
+    select: { createdAt: true, completedAt: true },
+    take: 50,
+    orderBy: { completedAt: "desc" },
+  });
+
+  let avgCompletionTime = 0;
+  if (completedTickets.length > 0) {
+    const totalDays = completedTickets.reduce((sum, t) => {
+      if (!t.completedAt) return sum;
+      return sum + (t.completedAt.getTime() - t.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+    }, 0);
+    avgCompletionTime = Math.round((totalDays / completedTickets.length) * 10) / 10;
+  }
+
+  return {
+    totalAssignedTickets: totalAssigned,
+    pendingDiagnostics,
+    inProgress,
+    completedThisMonth,
+    awaitingApproval,
+    avgCompletionTime,
+  };
+}
+
+// ─── TECHNICIAN: Urgent Tickets ──────────────────────────
+
+export async function getTechnicianUrgentTickets(technicianId: string, limit: number = 5) {
+  const tickets = await db.ticket.findMany({
+    where: {
+      assignedToId: technicianId,
+      priority: { in: ["HIGH", "URGENT"] },
+      status: { notIn: ["COMPLETED", "CANCELLED", "DELIVERED"] },
+    },
+    orderBy: { createdAt: "asc" },
+    take: limit,
+    select: {
+      id: true,
+      ticketNumber: true,
+      priority: true,
+      status: true,
+      deviceType: true,
+      brand: true,
+      createdAt: true,
+      customer: { select: { name: true } },
+    },
+  });
+
+  return tickets.map((t) => ({
+    id: t.id,
+    ticketNumber: t.ticketNumber,
+    priority: t.priority,
+    status: t.status,
+    device: `${t.brand} ${t.deviceType}`,
+    customerName: t.customer.name,
+    createdAt: t.createdAt.toISOString(),
+  }));
+}
+
+// ─── TECHNICIAN: Pending Action Tickets ──────────────────
+
+export async function getTechnicianPendingAction(technicianId: string, limit: number = 5) {
+  const tickets = await db.ticket.findMany({
+    where: {
+      assignedToId: technicianId,
+      status: { in: ["PENDING", "IN_DIAGNOSTICS"] },
+    },
+    orderBy: { createdAt: "asc" },
+    take: limit,
+    select: {
+      id: true,
+      ticketNumber: true,
+      status: true,
+      deviceType: true,
+      brand: true,
+      issueDescription: true,
+      createdAt: true,
+      customer: { select: { name: true } },
+    },
+  });
+
+  return tickets.map((t) => ({
+    id: t.id,
+    ticketNumber: t.ticketNumber,
+    status: t.status,
+    device: `${t.brand} ${t.deviceType}`,
+    issue: t.issueDescription.substring(0, 80) + (t.issueDescription.length > 80 ? "..." : ""),
+    customerName: t.customer.name,
+    createdAt: t.createdAt.toISOString(),
+  }));
+}
+
+// ─── TECHNICIAN: In Progress Tickets ─────────────────────
+
+export async function getTechnicianInProgressTickets(technicianId: string, limit: number = 5) {
+  const tickets = await db.ticket.findMany({
+    where: {
+      assignedToId: technicianId,
+      status: { in: ["IN_PROGRESS", "WAITING_FOR_PARTS", "APPROVED"] },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      ticketNumber: true,
+      status: true,
+      deviceType: true,
+      brand: true,
+      updatedAt: true,
+      customer: { select: { name: true } },
+    },
+  });
+
+  return tickets.map((t) => ({
+    id: t.id,
+    ticketNumber: t.ticketNumber,
+    status: t.status,
+    device: `${t.brand} ${t.deviceType}`,
+    customerName: t.customer.name,
+    updatedAt: t.updatedAt.toISOString(),
+  }));
+}
+
+// ─── TECHNICIAN: Recently Completed ──────────────────────
+
+export async function getTechnicianRecentCompleted(technicianId: string, limit: number = 5) {
+  const thisWeekStart = new Date();
+  thisWeekStart.setDate(thisWeekStart.getDate() - 7);
+  thisWeekStart.setHours(0, 0, 0, 0);
+
+  const tickets = await db.ticket.findMany({
+    where: {
+      assignedToId: technicianId,
+      status: "COMPLETED",
+      completedAt: { gte: thisWeekStart },
+    },
+    orderBy: { completedAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      ticketNumber: true,
+      deviceType: true,
+      brand: true,
+      finalCost: true,
+      completedAt: true,
+      customer: { select: { name: true } },
+    },
+  });
+
+  return tickets.map((t) => ({
+    id: t.id,
+    ticketNumber: t.ticketNumber,
+    device: `${t.brand} ${t.deviceType}`,
+    customerName: t.customer.name,
+    finalCost: toNumber(t.finalCost),
+    completedAt: t.completedAt?.toISOString() || "",
+  }));
+}

@@ -85,7 +85,7 @@ export function UserTable({ users, currentUserId, onDataChange }: { users: User[
       <Card className="overflow-hidden">
         {/* Desktop table */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
                 <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3">User</th>

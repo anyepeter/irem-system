@@ -125,7 +125,7 @@ export function SalesHistoryClient({ user, initialSales, initialTotal, basePath 
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); applyFilters({ status: v }); }}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -137,7 +137,7 @@ export function SalesHistoryClient({ user, initialSales, initialTotal, basePath 
               </SelectContent>
             </Select>
             <Select value={paymentFilter} onValueChange={(v) => { setPaymentFilter(v); applyFilters({ paymentStatus: v }); }}>
-              <SelectTrigger className="w-[170px]">
+              <SelectTrigger className="w-full sm:w-[170px]">
                 <SelectValue placeholder="Payment" />
               </SelectTrigger>
               <SelectContent>
@@ -148,7 +148,7 @@ export function SalesHistoryClient({ user, initialSales, initialTotal, basePath 
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); applyFilters({ saleType: v }); }}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
@@ -163,7 +163,7 @@ export function SalesHistoryClient({ user, initialSales, initialTotal, basePath 
           {/* Sales Table */}
           <Card className={isPending ? "opacity-50" : ""}>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="border-b bg-gray-50/50">
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Sale #</th>

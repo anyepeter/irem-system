@@ -209,7 +209,7 @@ export function SalesListClient({ user, initialSales, initialTotal, stats, summa
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); applyFilters({ status: v }); }}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -221,7 +221,7 @@ export function SalesListClient({ user, initialSales, initialTotal, stats, summa
               </SelectContent>
             </Select>
             <Select value={paymentFilter} onValueChange={(v) => { setPaymentFilter(v); applyFilters({ paymentStatus: v }); }}>
-              <SelectTrigger className="w-[170px]">
+              <SelectTrigger className="w-full sm:w-[170px]">
                 <SelectValue placeholder="Payment" />
               </SelectTrigger>
               <SelectContent>
@@ -239,7 +239,7 @@ export function SalesListClient({ user, initialSales, initialTotal, stats, summa
               <h3 className="text-sm font-semibold text-gray-700">Today&apos;s Sales</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="min-w-[800px] w-full">
                 <thead>
                   <tr className="border-b bg-gray-50/50">
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Sale #</th>

@@ -29,13 +29,13 @@ export function StatsCard({ title, value, icon: Icon, color, delay = 0 }: StatsC
       transition={{ delay, duration: 0.4 }}
     >
       <Card className="p-5 hover:shadow-md transition-shadow duration-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-500">{title}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-gray-500 truncate">{title}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1 truncate">{value}</p>
           </div>
-          <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center ring-4", colors.bg, colors.ring)}>
-            <Icon className={cn("w-6 h-6", colors.text)} />
+          <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center ring-4 flex-shrink-0", colors.bg, colors.ring)}>
+            <Icon className={cn("w-5 h-5", colors.text)} />
           </div>
         </div>
       </Card>

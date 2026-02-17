@@ -75,7 +75,7 @@ export function ProductTable({ products, role, basePath, onDataChange }: Props) 
       <div className="hidden md:block">
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[800px] text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b">
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Product</th>

@@ -90,7 +90,7 @@ export function CreditSalesClient({ user, initialSales, initialTotal, basePath }
 
         <Card className={isPending ? "opacity-50" : ""}>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b bg-gray-50/50">
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Sale #</th>

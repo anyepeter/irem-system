@@ -242,7 +242,7 @@ export function POSClient({ user, initialProducts, customers, categories, basePa
                 />
               </div>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -255,7 +255,7 @@ export function POSClient({ user, initialProducts, customers, categories, basePa
             </div>
 
             {/* Product Grid */}
-            <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 ${isSearching ? "opacity-50" : ""}`}>
+            <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3 ${isSearching ? "opacity-50" : ""}`}>
               {products.map((product) => {
                 const inCart = cart.find((i) => i.productId === product.id);
                 const price = Number(product.sellingPrice);
