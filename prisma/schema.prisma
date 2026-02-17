@@ -67,6 +67,33 @@ enum MovementType {
   DAMAGE
 }
 
+// ─── Sales Enums ──────────────────────────────────────────
+
+enum SaleType {
+  IN_SHOP
+  CREDIT
+}
+
+enum SaleStatus {
+  PENDING
+  PAID
+  COMPLETED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY_MTN
+  MOBILE_MONEY_ORANGE
+  BANK_TRANSFER
+  CREDIT
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -88,6 +115,8 @@ model User {
   productsCreated  Product[]       @relation("ProductsCreated")
   stockMovements   StockMovement[]
   categoriesCreated Category[]
+  salesCreated     Sale[]          @relation("SalesCreated")
+  salePayments     SalePayment[]   @relation("SalePaymentsCreated")
 
   @@index([clerkId])
   @@index([email])
@@ -107,6 +136,7 @@ model Customer {
   createdBy   User   @relation(fields: [createdById], references: [id])
 
   tickets Ticket[]
+  sales   Sale[]
 
   @@index([phone])
   @@index([name])
@@ -245,6 +275,7 @@ model Product {
 
   stockMovements StockMovement[]
   lowStockAlerts LowStockAlert[]
+  saleItems      SaleItem[]
 
   @@index([sku])
   @@index([name])
@@ -283,4 +314,112 @@ model LowStockAlert {
 
   @@index([productId])
   @@index([isActive])
+}
+
+// ─── Sales Models ─────────────────────────────────────────
+
+model Sale {
+  id            String        @id @default(cuid())
+  saleNumber    String        @unique
+
+  // Customer
+  customerId    Int?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customerName  String?
+  customerPhone String?
+
+  // Sale Type
+  saleType      SaleType      @default(IN_SHOP)
+
+  // Items & Pricing
+  items         SaleItem[]
+  subtotal      Decimal       @db.Decimal(10, 2)
+  discount      Decimal       @default(0) @db.Decimal(10, 2)
+  discountType  DiscountType?
+  tax           Decimal       @default(0) @db.Decimal(10, 2)
+  taxPercent    Decimal       @default(0) @db.Decimal(5, 2)
+  totalAmount   Decimal       @db.Decimal(10, 2)
+
+  // Payment
+  paymentStatus PaymentStatus @default(UNPAID)
+  amountPaid    Decimal       @default(0) @db.Decimal(10, 2)
+  amountDue     Decimal       @db.Decimal(10, 2)
+  payments      SalePayment[]
+
+  // Status
+  status        SaleStatus    @default(PENDING)
+  notes         String?       @db.Text
+
+  // Tracking
+  createdById   String
+  createdBy     User          @relation("SalesCreated", fields: [createdById], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  completedAt   DateTime?
+
+  @@index([saleNumber])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdById])
+  @@index([createdAt])
+  @@index([customerId])
+}
+
+model SaleItem {
+  id          String  @id @default(cuid())
+  saleId      String
+  sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+
+  // Snapshot at time of sale
+  productName String
+  productSKU  String
+
+  // Pricing
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  discount    Decimal @default(0) @db.Decimal(10, 2)
+  subtotal    Decimal @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  // Profit tracking
+  unitCost    Decimal @db.Decimal(10, 2)
+  profit      Decimal @db.Decimal(10, 2)
+
+  createdAt   DateTime @default(now())
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model SalePayment {
+  id              String        @id @default(cuid())
+  paymentNumber   String        @unique
+
+  saleId          String
+  sale            Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  amount          Decimal       @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod
+
+  // Mobile Money
+  mobileMoneyNumber String?
+  transactionId     String?
+
+  // Bank Transfer
+  bankName          String?
+  transferReference String?
+
+  notes           String?       @db.Text
+  paidAt          DateTime      @default(now())
+
+  createdById     String
+  createdBy       User          @relation("SalePaymentsCreated", fields: [createdById], references: [id])
+  createdAt       DateTime      @default(now())
+
+  @@index([saleId])
+  @@index([createdById])
+  @@index([createdAt])
 }

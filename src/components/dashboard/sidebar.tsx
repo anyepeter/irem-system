@@ -21,6 +21,7 @@ import {
   Receipt,
   Package,
   ChevronUp,
+  ShoppingCart,
 } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
 
@@ -36,6 +37,7 @@ const adminItems: SidebarItem[] = [
   { label: "Customers", href: "/admin/customers", icon: Contact },
   { label: "Tickets", href: "/admin/tickets", icon: ClipboardList },
   { label: "Inventory", href: "/admin/inventory", icon: Package },
+  { label: "Sales", href: "/admin/sales", icon: ShoppingCart },
   { label: "Payments", href: "/admin/payments", icon: Receipt },
 ];
 
@@ -44,6 +46,7 @@ const cashierItems: SidebarItem[] = [
   { label: "Customers", href: "/cashier/customers", icon: Contact },
   { label: "Tickets", href: "/cashier/tickets", icon: ClipboardList },
   { label: "Inventory", href: "/cashier/inventory", icon: Package },
+  { label: "Sales", href: "/cashier/sales", icon: ShoppingCart },
   { label: "Payments", href: "/cashier/payments", icon: Receipt },
 ];
 

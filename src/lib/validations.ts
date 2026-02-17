@@ -120,3 +120,42 @@ export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type StockAdjustmentInput = z.infer<typeof stockAdjustmentSchema>;
 export type CreateCategoryInput = z.infer<typeof createCategorySchema2>;
+
+// Sales schemas
+export const saleItemSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  unitPrice: z.coerce.number().min(0),
+});
+
+export const createSaleSchema = z.object({
+  customerId: z.coerce.number().optional(),
+  customerName: z.string().optional().default(""),
+  customerPhone: z.string().optional().default(""),
+  saleType: z.enum(["IN_SHOP", "CREDIT"]).default("IN_SHOP"),
+  items: z.array(saleItemSchema).min(1, "At least one item is required"),
+  discount: z.coerce.number().min(0).default(0),
+  discountType: z.enum(["PERCENTAGE", "FIXED"]).optional(),
+  taxPercent: z.coerce.number().min(0).default(0),
+  notes: z.string().optional().default(""),
+});
+
+export const salePaymentSchema = z.object({
+  saleId: z.string().min(1),
+  amount: z.coerce.number().min(1, "Payment amount is required"),
+  paymentMethod: z.enum([
+    "CASH",
+    "MOBILE_MONEY_MTN",
+    "MOBILE_MONEY_ORANGE",
+    "BANK_TRANSFER",
+    "CREDIT",
+  ]),
+  mobileMoneyNumber: z.string().optional().default(""),
+  transactionId: z.string().optional().default(""),
+  bankName: z.string().optional().default(""),
+  transferReference: z.string().optional().default(""),
+  notes: z.string().optional().default(""),
+});
+
+export type CreateSaleInput = z.infer<typeof createSaleSchema>;
+export type SalePaymentInput = z.infer<typeof salePaymentSchema>;
