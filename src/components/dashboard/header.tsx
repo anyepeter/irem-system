@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, UserCircle, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getInitials } from "@/lib/utils";
+import { useClerk } from "@clerk/nextjs";
 
 type HeaderProps = {
   title: string;
@@ -22,6 +31,8 @@ const profilePaths = {
 
 export function Header({ title, subtitle, username, avatar, role }: HeaderProps) {
   const profileHref = role ? profilePaths[role] : "#";
+  const { signOut } = useClerk();
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -10 }}
@@ -46,14 +57,42 @@ export function Header({ title, subtitle, username, avatar, role }: HeaderProps)
             <Bell className="w-5 h-5 text-gray-500" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full" />
           </button>
-          <Link href={profileHref} className="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-            <Avatar className="w-9 h-9 cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 transition-all">
-              <AvatarImage src={avatar ?? undefined} alt={username} />
-              <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
-                {getInitials(username)}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                <Avatar className="w-9 h-9 cursor-pointer hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 transition-all">
+                  <AvatarImage src={avatar ?? undefined} alt={username} />
+                  <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
+                    {getInitials(username)}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div>
+                  <p className="text-sm font-medium">{username}</p>
+                  <p className="text-xs text-gray-500 capitalize">{role?.toLowerCase()}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href={profileHref} className="flex items-center gap-2 cursor-pointer">
+                  <UserCircle className="w-4 h-4 text-gray-400" />
+                  My Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => signOut({ redirectUrl: "/auth/login" })}
+                className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </motion.header>

@@ -140,7 +140,7 @@ export function SaleDetailClient({ user, sale, basePath }: Props) {
       <Sidebar role={user.role as "ADMIN" | "CASHIER" | "TECHNICIAN"} username={user.username} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <Header title={`Sale ${sale.saleNumber}`} subtitle="Sale details" username={user.username} avatar={user.avatar} />
+        <Header title={`Sale ${sale.saleNumber}`} subtitle="Sale details" username={user.username} avatar={user.avatar} role={user.role as "ADMIN" | "CASHIER" | "TECHNICIAN"} />
 
         <div className="p-4 lg:p-6 space-y-6">
           {/* Back & Actions */}

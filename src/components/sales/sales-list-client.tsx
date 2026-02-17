@@ -117,7 +117,7 @@ export function SalesListClient({ user, initialSales, initialTotal, stats, baseP
       <Sidebar role={user.role as "ADMIN" | "CASHIER" | "TECHNICIAN"} username={user.username} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <Header title="Sales" subtitle="Today's sales overview" username={user.username} avatar={user.avatar} />
+        <Header title="Sales" subtitle="Today's sales overview" username={user.username} avatar={user.avatar} role={user.role as "ADMIN" | "CASHIER" | "TECHNICIAN"} />
 
         <div className="p-4 lg:p-6 space-y-6">
           {/* Stats */}

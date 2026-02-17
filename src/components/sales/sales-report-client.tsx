@@ -61,7 +61,7 @@ export function SalesReportClient({ user, initialReport, basePath }: Props) {
       <Sidebar role={user.role as "ADMIN" | "CASHIER" | "TECHNICIAN"} username={user.username} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <Header title="Sales Reports" subtitle="Analytics and insights" username={user.username} avatar={user.avatar} />
+        <Header title="Sales Reports" subtitle="Analytics and insights" username={user.username} avatar={user.avatar} role={user.role as "ADMIN" | "CASHIER" | "TECHNICIAN"} />
 
         <div className="p-4 lg:p-6 space-y-6">
         <div className="flex items-center justify-between">
