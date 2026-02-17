@@ -84,7 +84,7 @@ export function UserTable({ users, currentUserId, onDataChange }: { users: User[
     <>
       <Card className="overflow-hidden">
         {/* Desktop table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="block overflow-x-auto">
           <table className="w-full min-w-[700px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
@@ -157,55 +157,6 @@ export function UserTable({ users, currentUserId, onDataChange }: { users: User[
               </AnimatePresence>
             </tbody>
           </table>
-        </div>
-
-        {/* Mobile cards */}
-        <div className="md:hidden divide-y divide-gray-100">
-          {users.map((user, i) => (
-            <motion.div
-              key={user.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="p-4 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <Avatar className="w-10 h-10 shrink-0">
-                  <AvatarImage src={user.avatar ?? undefined} />
-                  <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
-                    {getInitials(user.username)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{user.username}</p>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                  <Badge variant={roleBadgeVariant[user.role]} className="mt-1 text-[10px]">{user.role}</Badge>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditTarget(user)}
-                  className="text-gray-400 hover:text-blue-600"
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                {user.id !== currentUserId ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeleteTarget(user)}
-                    className="text-gray-400 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <span className="text-xs text-gray-400 px-2">You</span>
-                )}
-              </div>
-            </motion.div>
-          ))}
         </div>
 
         {users.length === 0 && (

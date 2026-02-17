@@ -72,7 +72,7 @@ export function CreateUserDialog({ onSuccess }: { onSuccess?: () => void } = {})
       <DialogTrigger asChild>
         <Button className="gap-2">
           <UserPlus className="w-4 h-4" />
-          <span className="hidden sm:inline">Create User</span>
+          <span className="inline">Create User</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">

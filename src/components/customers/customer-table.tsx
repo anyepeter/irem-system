@@ -71,7 +71,7 @@ export function CustomerTable({ customers, canDelete, onDataChange }: CustomerTa
     <>
       <Card className="overflow-hidden">
         {/* Desktop table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="block overflow-x-auto">
           <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
@@ -173,69 +173,6 @@ export function CustomerTable({ customers, canDelete, onDataChange }: CustomerTa
               </AnimatePresence>
             </tbody>
           </table>
-        </div>
-
-        {/* Mobile cards */}
-        <div className="md:hidden divide-y divide-gray-100">
-          {customers.map((customer, i) => (
-            <motion.div
-              key={customer.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className="p-4 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                  {customer.isVIP ? (
-                    <Crown className="w-4 h-4 text-amber-500" />
-                  ) : (
-                    <User className="w-4 h-4 text-blue-500" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {customer.name}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {customer.phone}
-                  </p>
-                  {customer.address && (
-                    <p className="text-xs text-gray-400 truncate flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {customer.address}
-                    </p>
-                  )}
-                  <Badge
-                    variant={customer.isVIP ? "vip" : "regular"}
-                    className="mt-1 text-[10px]"
-                  >
-                    {customer.isVIP ? "VIP" : "Regular"}
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditTarget(customer)}
-                  className="text-gray-400 hover:text-blue-600"
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                {canDelete && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeleteTarget(customer)}
-                    className="text-gray-400 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </motion.div>
-          ))}
         </div>
 
         {customers.length === 0 && (

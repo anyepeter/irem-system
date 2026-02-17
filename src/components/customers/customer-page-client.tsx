@@ -159,7 +159,7 @@ export function CustomerPageClient({
                 onClick={() => setCreateOpen(true)}
               >
                 <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Create Customer</span>
+                <span className="inline">Create Customer</span>
               </Button>
             </div>
 
