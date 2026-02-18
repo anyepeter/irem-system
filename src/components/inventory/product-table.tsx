@@ -1,21 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { deleteProduct } from "@/actions/inventory";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import {
+  checkProductRelatedData,
+  cascadeDeleteProduct,
+  type DeleteCheckResult,
+} from "@/actions/delete";
 import { formatPrice } from "@/lib/inventory-constants";
 import { CONDITION_COLORS, STATUS_COLORS } from "@/lib/inventory-constants";
 import { Trash2, Eye, Package, AlertTriangle } from "lucide-react";
@@ -45,18 +42,45 @@ type Props = {
 };
 
 export function ProductTable({ products, role, basePath, onDataChange }: Props) {
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [checkResult, setCheckResult] = useState<DeleteCheckResult | null>(null);
+  const [checkLoading, setCheckLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleDelete = () => {
-    if (!deleteId) return;
-    startTransition(async () => {
-      const result = await deleteProduct(deleteId);
-      if (result.success) {
-        setDeleteId(null);
+  const handleDeleteClick = async (product: Product) => {
+    setDeleteTarget(product);
+    setCheckResult(null);
+    setDeleteResult(null);
+    setCheckLoading(true);
+    const result = await checkProductRelatedData(product.id);
+    setCheckResult(result);
+    setCheckLoading(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteResult(null);
+
+    const res = await cascadeDeleteProduct(deleteTarget.id);
+    setDeleteResult(res);
+    setDeleting(false);
+
+    if (res.success) {
+      setTimeout(() => {
+        setDeleteTarget(null);
+        setCheckResult(null);
+        setDeleteResult(null);
         onDataChange?.();
-      }
-    });
+      }, 1000);
+    }
+  };
+
+  const handleCloseDelete = () => {
+    setDeleteTarget(null);
+    setCheckResult(null);
+    setDeleteResult(null);
   };
 
   if (products.length === 0) {
@@ -145,7 +169,7 @@ export function ProductTable({ products, role, basePath, onDataChange }: Props) 
                             </Button>
                           </Link>
                           {role === "ADMIN" && (
-                            <Button variant="ghost" size="sm" onClick={() => setDeleteId(product.id)} className="text-red-500 hover:text-red-700">
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(product)} className="text-red-500 hover:text-red-700">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           )}
@@ -213,23 +237,17 @@ export function ProductTable({ products, role, basePath, onDataChange }: Props) 
         })}
       </div>
 
-      {/* Delete Dialog */}
-      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Product</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this product? This action cannot be undone. All stock movement history will also be deleted.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
-              {isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete Confirmation */}
+      <DeleteConfirmationModal
+        open={!!deleteTarget}
+        onClose={handleCloseDelete}
+        checkResult={checkResult}
+        loading={checkLoading}
+        onConfirm={handleConfirmDelete}
+        deleting={deleting}
+        result={deleteResult}
+        entityType="Product"
+      />
     </>
   );
 }

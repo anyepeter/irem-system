@@ -7,7 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { PaymentModal } from "./payment-modal";
-import { cancelSale, deleteSale } from "@/actions/sale";
+import { cancelSale } from "@/actions/sale";
+import {
+  checkSaleRelatedData,
+  cascadeDeleteSale,
+  type DeleteCheckResult,
+} from "@/actions/delete";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import {
   formatCurrency,
   SALE_STATUS_COLORS,
@@ -90,6 +96,11 @@ export function SaleDetailClient({ user, sale, basePath }: Props) {
   const [isPending, startTransition] = useTransition();
   const [showPayment, setShowPayment] = useState(false);
   const [error, setError] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteCheckResult, setDeleteCheckResult] = useState<DeleteCheckResult | null>(null);
+  const [deleteCheckLoading, setDeleteCheckLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const totalAmount = Number(sale.totalAmount);
   const amountDue = Number(sale.amountDue);
@@ -112,17 +123,33 @@ export function SaleDetailClient({ user, sale, basePath }: Props) {
     });
   };
 
-  const handleDelete = () => {
-    if (!confirm("Are you sure you want to permanently delete this sale? This action cannot be undone.")) return;
-    setError("");
-    startTransition(async () => {
-      const result = await deleteSale(sale.id);
-      if (result.success) {
+  const handleDeleteClick = async () => {
+    setShowDeleteModal(true);
+    setDeleteCheckResult(null);
+    setDeleteResult(null);
+    setDeleteCheckLoading(true);
+    const result = await checkSaleRelatedData(sale.id);
+    setDeleteCheckResult(result);
+    setDeleteCheckLoading(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    setDeleteResult(null);
+    const res = await cascadeDeleteSale(sale.id);
+    setDeleteResult(res);
+    setDeleting(false);
+    if (res.success) {
+      setTimeout(() => {
         router.push(`${basePath}/sales`);
-      } else {
-        setError(result.message);
-      }
-    });
+      }, 1000);
+    }
+  };
+
+  const handleCloseDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteCheckResult(null);
+    setDeleteResult(null);
   };
 
   const handlePaymentSuccess = () => {
@@ -160,7 +187,7 @@ export function SaleDetailClient({ user, sale, basePath }: Props) {
                 </Button>
               )}
               {isAdmin && (
-                <Button variant="outline" onClick={handleDelete} disabled={isPending} className="text-red-600 hover:bg-red-50">
+                <Button variant="outline" onClick={handleDeleteClick} disabled={isPending} className="text-red-600 hover:bg-red-50">
                   <Trash2 className="w-4 h-4 mr-2" /> Delete Sale
                 </Button>
               )}
@@ -368,6 +395,18 @@ export function SaleDetailClient({ user, sale, basePath }: Props) {
             totalAmount={totalAmount}
             amountDue={amountDue}
             onSuccess={handlePaymentSuccess}
+          />
+
+          {/* Delete Confirmation Modal */}
+          <DeleteConfirmationModal
+            open={showDeleteModal}
+            onClose={handleCloseDelete}
+            checkResult={deleteCheckResult}
+            loading={deleteCheckLoading}
+            onConfirm={handleConfirmDelete}
+            deleting={deleting}
+            result={deleteResult}
+            entityType="Sale"
           />
         </div>
       </div>

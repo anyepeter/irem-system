@@ -6,16 +6,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { EditUserDialog } from "@/components/dashboard/edit-user-dialog";
-import { deleteUser, type ActionResult } from "@/actions/user";
-import { Trash2, Loader2, AlertTriangle, Pencil, Eye, EyeOff } from "lucide-react";
+import {
+  checkUserRelatedData,
+  cascadeDeleteUser,
+  type DeleteCheckResult,
+} from "@/actions/delete";
+import { Trash2, Pencil, Eye, EyeOff } from "lucide-react";
 import { getInitials, formatDate } from "@/lib/utils";
 
 type User = {
@@ -58,26 +56,45 @@ function PasswordCell({ password }: { password: string }) {
 
 export function UserTable({ users, currentUserId, onDataChange }: { users: User[]; currentUserId: string; onDataChange?: () => void }) {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [checkResult, setCheckResult] = useState<DeleteCheckResult | null>(null);
+  const [checkLoading, setCheckLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteResult, setDeleteResult] = useState<ActionResult | null>(null);
+  const [deleteResult, setDeleteResult] = useState<{ success: boolean; message: string } | null>(null);
   const [editTarget, setEditTarget] = useState<User | null>(null);
 
-  const handleDelete = async () => {
+  const handleDeleteClick = async (user: User) => {
+    setDeleteTarget(user);
+    setCheckResult(null);
+    setDeleteResult(null);
+    setCheckLoading(true);
+    const result = await checkUserRelatedData(user.id);
+    setCheckResult(result);
+    setCheckLoading(false);
+  };
+
+  const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
     setDeleteResult(null);
 
-    const res = await deleteUser(deleteTarget.id);
+    const res = await cascadeDeleteUser(deleteTarget.id);
     setDeleteResult(res);
     setDeleting(false);
 
     if (res.success) {
       setTimeout(() => {
         setDeleteTarget(null);
+        setCheckResult(null);
         setDeleteResult(null);
         onDataChange?.();
       }, 1000);
     }
+  };
+
+  const handleCloseDelete = () => {
+    setDeleteTarget(null);
+    setCheckResult(null);
+    setDeleteResult(null);
   };
 
   return (
@@ -142,7 +159,7 @@ export function UserTable({ users, currentUserId, onDataChange }: { users: User[
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setDeleteTarget(user)}
+                            onClick={() => handleDeleteClick(user)}
                             className="text-gray-400 hover:text-red-600"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -176,36 +193,17 @@ export function UserTable({ users, currentUserId, onDataChange }: { users: User[
         />
       )}
 
-      {/* Delete confirmation dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteResult(null); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              Delete User
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{deleteTarget?.username}</strong>? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteResult && (
-            <div className={`text-sm px-3 py-2 rounded-lg ${deleteResult.success ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
-              {deleteResult.message}
-            </div>
-          )}
-
-          <div className="flex gap-3 justify-end mt-4">
-            <Button variant="outline" onClick={() => { setDeleteTarget(null); setDeleteResult(null); }}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Delete
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Delete confirmation */}
+      <DeleteConfirmationModal
+        open={!!deleteTarget}
+        onClose={handleCloseDelete}
+        checkResult={checkResult}
+        loading={checkLoading}
+        onConfirm={handleConfirmDelete}
+        deleting={deleting}
+        result={deleteResult}
+        entityType="User"
+      />
     </>
   );
 }

@@ -4,22 +4,17 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { TicketStatusBadge } from "./ticket-status-badge";
-import { deleteTicket, type ActionResult } from "@/actions/ticket";
+import {
+  checkTicketRelatedData,
+  cascadeDeleteTicket,
+  type DeleteCheckResult,
+} from "@/actions/delete";
 import { PRIORITY_COLORS } from "@/lib/ticket-constants";
 import {
   Trash2,
-  Loader2,
-  AlertTriangle,
   Eye,
   Crown,
   Smartphone,
@@ -49,25 +44,44 @@ type Props = {
 
 export function TicketTable({ tickets, canDelete, basePath, onDataChange }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<TicketRow | null>(null);
+  const [checkResult, setCheckResult] = useState<DeleteCheckResult | null>(null);
+  const [checkLoading, setCheckLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteResult, setDeleteResult] = useState<ActionResult | null>(null);
+  const [deleteResult, setDeleteResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleDelete = async () => {
+  const handleDeleteClick = async (ticket: TicketRow) => {
+    setDeleteTarget(ticket);
+    setCheckResult(null);
+    setDeleteResult(null);
+    setCheckLoading(true);
+    const result = await checkTicketRelatedData(ticket.id);
+    setCheckResult(result);
+    setCheckLoading(false);
+  };
+
+  const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
     setDeleteResult(null);
 
-    const res = await deleteTicket(deleteTarget.id);
+    const res = await cascadeDeleteTicket(deleteTarget.id);
     setDeleteResult(res);
     setDeleting(false);
 
     if (res.success) {
       setTimeout(() => {
         setDeleteTarget(null);
+        setCheckResult(null);
         setDeleteResult(null);
         onDataChange?.();
       }, 1000);
     }
+  };
+
+  const handleCloseDelete = () => {
+    setDeleteTarget(null);
+    setCheckResult(null);
+    setDeleteResult(null);
   };
 
   return (
@@ -172,7 +186,7 @@ export function TicketTable({ tickets, canDelete, basePath, onDataChange }: Prop
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setDeleteTarget(ticket)}
+                            onClick={() => handleDeleteClick(ticket)}
                             className="text-gray-400 hover:text-red-600"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -233,7 +247,7 @@ export function TicketTable({ tickets, canDelete, basePath, onDataChange }: Prop
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-gray-400 hover:text-red-600"
-                      onClick={() => setDeleteTarget(ticket)}
+                      onClick={() => handleDeleteClick(ticket)}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -258,65 +272,16 @@ export function TicketTable({ tickets, canDelete, basePath, onDataChange }: Prop
       </Card>
 
       {/* Delete confirmation */}
-      <Dialog
+      <DeleteConfirmationModal
         open={!!deleteTarget}
-        onOpenChange={(v) => {
-          if (!v) {
-            setDeleteTarget(null);
-            setDeleteResult(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              Delete Ticket
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete ticket{" "}
-              <strong>{deleteTarget?.ticketNumber}</strong>? This action cannot
-              be undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteResult && (
-            <div
-              className={`text-sm px-3 py-2 rounded-lg ${
-                deleteResult.success
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-red-50 text-red-700"
-              }`}
-            >
-              {deleteResult.message}
-            </div>
-          )}
-
-          <div className="flex gap-3 justify-end mt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDeleteTarget(null);
-                setDeleteResult(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-              Delete
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        onClose={handleCloseDelete}
+        checkResult={checkResult}
+        loading={checkLoading}
+        onConfirm={handleConfirmDelete}
+        deleting={deleting}
+        result={deleteResult}
+        entityType="Ticket"
+      />
     </>
   );
 }

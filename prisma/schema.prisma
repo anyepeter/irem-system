@@ -133,7 +133,7 @@ model Customer {
   updatedAt DateTime @updatedAt
 
   createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   tickets Ticket[]
   sales   Sale[]
@@ -149,7 +149,7 @@ model Ticket {
 
   // Customer & Device Info
   customerId       Int
-  customer         Customer @relation(fields: [customerId], references: [id])
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   deviceType       String
   brand            String
   serialNumber     String?
@@ -157,7 +157,7 @@ model Ticket {
 
   // Assignment
   assignedToId String
-  assignedTo   User   @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  assignedTo   User   @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: Cascade)
 
   // Status & Workflow
   status             TicketStatus   @default(PENDING)
@@ -189,7 +189,7 @@ model Ticket {
 
   // Tracking
   createdById String
-  createdBy   User     @relation("CreatedTickets", fields: [createdById], references: [id])
+  createdBy   User     @relation("CreatedTickets", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   completedAt DateTime?
@@ -213,7 +213,7 @@ model StatusHistory {
   status      TicketStatus
   notes       String?      @db.Text
   updatedById String
-  updatedBy   User         @relation(fields: [updatedById], references: [id])
+  updatedBy   User         @relation(fields: [updatedById], references: [id], onDelete: Cascade)
   createdAt   DateTime     @default(now())
 
   @@index([ticketId])
@@ -228,7 +228,7 @@ model PaymentHistory {
   paymentMethod String
   note          String?  @db.Text
   recordedById  String
-  recordedBy    User     @relation(fields: [recordedById], references: [id])
+  recordedBy    User     @relation(fields: [recordedById], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
 
   @@index([ticketId])
@@ -240,7 +240,7 @@ model Category {
   name        String   @unique
   description String?  @db.Text
   createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -256,7 +256,7 @@ model Product {
   name            String
   description     String?          @db.Text
   categoryId      String
-  category        Category         @relation(fields: [categoryId], references: [id])
+  category        Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   quantity        Int              @default(0)
   reorderLevel    Int              @default(5)
   unit            String           @default("pcs")
@@ -269,7 +269,7 @@ model Product {
   supplier        String?
   lastRestockedAt DateTime?
   createdById     String
-  createdBy       User             @relation("ProductsCreated", fields: [createdById], references: [id])
+  createdBy       User             @relation("ProductsCreated", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -294,7 +294,7 @@ model StockMovement {
   notes       String?      @db.Text
   reference   String?
   createdById String
-  createdBy   User         @relation(fields: [createdById], references: [id])
+  createdBy   User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
   createdAt   DateTime     @default(now())
 
   @@index([productId])
@@ -324,7 +324,7 @@ model Sale {
 
   // Customer
   customerId    Int?
-  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerName  String?
   customerPhone String?
 
@@ -352,7 +352,7 @@ model Sale {
 
   // Tracking
   createdById   String
-  createdBy     User          @relation("SalesCreated", fields: [createdById], references: [id])
+  createdBy     User          @relation("SalesCreated", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   completedAt   DateTime?
@@ -371,7 +371,7 @@ model SaleItem {
   sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   productId   String
-  product     Product @relation(fields: [productId], references: [id])
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   // Snapshot at time of sale
   productName String
@@ -416,7 +416,7 @@ model SalePayment {
   paidAt          DateTime      @default(now())
 
   createdById     String
-  createdBy       User          @relation("SalePaymentsCreated", fields: [createdById], references: [id])
+  createdBy       User          @relation("SalePaymentsCreated", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt       DateTime      @default(now())
 
   @@index([saleId])
